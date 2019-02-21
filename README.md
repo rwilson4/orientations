@@ -19,5 +19,5 @@
 </tr>
 </table>
 
-Code to accompany [Rotations, Orientations, and their Orientations](https://www.adventuresinwhy.com/post/quaternions-and-rotations/)
+Code to accompany [Rotations, Orientations, and their Representations](https://www.adventuresinwhy.com/post/quaternions-and-rotations/)
 on [Adventures in Why](https://www.adventuresinwhy.com/).
