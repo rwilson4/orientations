@@ -18,3 +18,6 @@
   </td>
 </tr>
 </table>
+
+Code to accompany [https://www.adventuresinwhy.com/post/quaternions-and-rotations/](Rotations, Orientations, and their Orientations)
+on [https://www.adventuresinwhy.com/](Adventures in Why).
