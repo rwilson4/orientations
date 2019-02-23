@@ -1,6 +1,6 @@
 const DBL_EPSILON: f64 = 2.220_446_049_250_313e-16;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 struct Vector3d {
     data: [f64; 3]
 }
@@ -135,7 +135,6 @@ impl Rotation for Quaternion {
 }
 
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -147,5 +146,65 @@ mod tests {
         let expected = 32.0;
         let actual = x.dot(&y);
         assert_eq!(actual, expected);
+    }
+
+    macro_rules! norm_squared_tests {
+        ($($name:ident: $value:expr,)*) => {
+        $(
+            #[test]
+            fn $name() {
+                let (input, expected) = $value;
+                assert_eq!(expected, input.norm_squared());
+            }
+        )*
+        }
+    }
+
+    norm_squared_tests! {
+        norm_squared_0: (Vector3d::new([1.0, 2.0, 3.0]), 14.0),
+        norm_squared_1: (Vector3d::new([-1.0, -2.0, -3.0]), 14.0),
+        norm_squared_2: (Vector3d::new([-1.0, 2.0, 3.0]), 14.0),
+        norm_squared_3: (Vector3d::new([1.0, 0.0, 3.0]), 10.0),
+    }
+
+    macro_rules! zero_dot_x_is_zero_tests {
+        ($($name:ident: $value:expr,)*) => {
+        $(
+            #[test]
+            fn $name() {
+                let zero = Vector3d::zero();
+                assert_eq!(0.0, zero.dot(&$value));
+            }
+        )*
+        }
+    }
+
+    zero_dot_x_is_zero_tests! {
+        zero_dot_x_is_zero_0: Vector3d::new([1.0, 2.0, 3.0]),
+        zero_dot_x_is_zero_1: Vector3d::new([-1.0, 2.0, 3.0]),
+        zero_dot_x_is_zero_2: Vector3d::new([1.0, -2.0, 3.0]),
+        zero_dot_x_is_zero_3: Vector3d::new([1.0, 2.0, -3.0]),
+    }
+
+    #[test]
+    fn vector3d_norm() {
+        let x = Vector3d::new([1.0, 2.0, 2.0]);
+        let expected = 3.0;
+        assert_eq!(expected, x.norm());
+    }
+
+    #[test]
+    fn vector3d_scalar_multiple() {
+        let x = Vector3d::new([1.0, 2.0, 3.0]);
+        let alpha = 2.0;
+        let expected = Vector3d::new([2.0, 4.0, 6.0]);
+        assert_eq!(expected, x.scalar_multiple(alpha));
+    }
+
+    #[test]
+    fn vector3d_negate() {
+        let x = Vector3d::new([1.0, 2.0, 3.0]);
+        let expected = Vector3d::new([-1.0, -2.0, -3.0]);
+        assert_eq!(expected, x.negate());
     }
 }
