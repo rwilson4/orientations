@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Quaternion","A quaternion"],["Vector3d","A 3-d vector"]],"trait":[["Orientation",""],["Rotation",""]]});
