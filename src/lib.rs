@@ -1,16 +1,35 @@
 const DBL_EPSILON: f64 = 2.220_446_049_250_313e-16;
 
+/// A 3-d vector
 #[derive(Clone, PartialEq, Debug)]
-struct Vector3d {
+pub struct Vector3d {
     data: [f64; 3]
 }
 
 impl Vector3d {
-    fn new(data: [f64; 3]) -> Vector3d {
+    /// Create a new Vector3d.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use orientations::Vector3d;
+    /// let x = Vector3d::new([1.0, 2.0, 3.0]);
+    /// ```
+    pub fn new(data: [f64; 3]) -> Vector3d {
         Vector3d{ data }
     }
 
-    fn dot(&self, other: &Vector3d) -> f64 {
+    /// Computes the dot product of two vectors.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use orientations::Vector3d;
+    /// let x = Vector3d::new([1.0, 2.0, 3.0]);
+    /// let y = Vector3d::new([4.0, 5.0, 6.0]);
+    /// assert_eq!(32.0, x.dot(&y));
+    /// ```
+    pub fn dot(&self, other: &Vector3d) -> f64 {
         let mut dot_product: f64 = 0.0;
         for i in 0..3 {
             dot_product += self.data[i] * other.data[i];
@@ -18,15 +37,44 @@ impl Vector3d {
         dot_product
     }
 
-    fn norm_squared(&self) -> f64 {
+    /// Computes the square of the (l2) norm of a vector.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use orientations::Vector3d;
+    /// let x = Vector3d::new([1.0, 2.0, 3.0]);
+    /// assert_eq!(14.0, x.norm_squared());
+    /// ```
+    pub fn norm_squared(&self) -> f64 {
         self.dot(&self)
     }
 
-    fn norm(&self) -> f64 {
+    /// Computes the (l2) norm of a vector.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use orientations::Vector3d;
+    /// let x = Vector3d::new([1.0, 2.0, 2.0]);
+    /// assert_eq!(3.0, x.norm());
+    /// ```
+    pub fn norm(&self) -> f64 {
         self.norm_squared().sqrt()
     }
 
-    fn scalar_multiple(&self, alpha: f64) -> Vector3d {
+    /// Computes the scalar multiple of a vector.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use orientations::Vector3d;
+    /// let x = Vector3d::new([1.0, 2.0, 3.0]);
+    /// let alpha = 2.0;
+    /// let expected = Vector3d::new([2.0, 4.0, 6.0]);
+    /// assert_eq!(expected, x.scalar_multiple(alpha));
+    /// ```
+    pub fn scalar_multiple(&self, alpha: f64) -> Vector3d {
         Vector3d::new(
             [
                 alpha * self.data[0],
@@ -36,7 +84,17 @@ impl Vector3d {
         )
     }
 
-    fn negate(&self) -> Vector3d {
+    /// Computes the negative of a vector.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use orientations::Vector3d;
+    /// let x = Vector3d::new([1.0, 2.0, 3.0]);
+    /// let expected = Vector3d::new([-1.0, -2.0, -3.0]);
+    /// assert_eq!(expected, x.negate());
+    /// ```
+    pub fn negate(&self) -> Vector3d {
         Vector3d::new(
             [
                 -self.data[0],
@@ -46,18 +104,28 @@ impl Vector3d {
         )
     }
 
-    fn zero() -> Vector3d {
+    /// Returns the zero vector.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use orientations::Vector3d;
+    /// let expected = Vector3d::new([0.0, 0.0, 0.0]);
+    /// assert_eq!(expected, Vector3d::zero());
+    /// ```
+    pub fn zero() -> Vector3d {
         Vector3d::new( [0.0, 0.0, 0.0] )
     }
 }
 
-#[derive(Clone)]
-struct Quaternion {
+/// A quaternion
+#[derive(Clone, PartialEq, Debug)]
+pub struct Quaternion {
     real_part: f64,
     imaginary_part: Vector3d
 }
 
-trait Rotation {
+pub trait Rotation {
     type R: Rotation;
     fn identity() -> Self::R;
     fn inverse(&self) -> Self::R;
@@ -67,21 +135,32 @@ trait Rotation {
     fn multiply<T: Rotation>(&self, r: &T) -> Self::R;
 }
 
-trait Orientation {
+pub trait Orientation {
 }
 
 impl Quaternion {
-    fn new(real_part: f64, imaginary_part: Vector3d) -> Quaternion {
+    /// Create a new Quaternion.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let real_part = 1.0;
+    /// let imaginary_part = orientations::Vector3d::zero();
+    /// let q = orientations::Quaternion::new(real_part, imaginary_part);
+    /// ```
+    pub fn new(real_part: f64, imaginary_part: Vector3d) -> Quaternion {
         Quaternion {
             real_part,
             imaginary_part
         }
     }
 
+    /// Compute the conjugate of a quaternion.
     fn conjugate(&self) -> Quaternion {
         Quaternion::new(self.real_part, self.imaginary_part.negate())
     }
 
+    /// Compute the square of the (l2) norm of the quaternion
     fn norm_squared(&self) -> f64 {
         self.real_part * self.real_part + self.imaginary_part.norm_squared()
     }
@@ -91,6 +170,15 @@ impl Quaternion {
 impl Rotation for Quaternion {
     type R = Quaternion;
 
+    /// Return the identity Quaternion
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use orientations::*;
+    /// let expected = Quaternion::new(1.0, Vector3d::zero());
+    /// assert_eq!(expected, Quaternion::identity());
+    /// ```
     fn identity() -> Quaternion {
         Quaternion::new(1.0, Vector3d::zero())
     }
@@ -206,5 +294,12 @@ mod tests {
         let x = Vector3d::new([1.0, 2.0, 3.0]);
         let expected = Vector3d::new([-1.0, -2.0, -3.0]);
         assert_eq!(expected, x.negate());
+    }
+
+    #[test]
+    fn quaternion_conjugate() {
+        let q = Quaternion::new(0.2, Vector3d::new([0.3, 0.4, 0.5]));
+        let expected = Quaternion::new(0.2, Vector3d::new([-0.3, -0.4, -0.5]));
+        assert_eq!(expected, q.conjugate());
     }
 }
