@@ -183,6 +183,16 @@ impl Rotation for Quaternion {
         Quaternion::new(1.0, Vector3d::zero())
     }
 
+    /// Calculate the inverse of a quaternion
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use orientations::*;
+    /// let sqrt2 = (2 as f64).sqrt() / 2.0;
+    /// let q = Quaternion::new(sqrt2, Vector3d::new([sqrt2, 0.0, 0.0]));
+    /// let expected = Quaternion::new(sqrt2, Vector3d::new([-sqrt2, 0.0, 0.0]));
+    /// ```
     fn inverse(&self) -> Quaternion {
         // Check that norm is > 0
         let norm_squared = self.norm_squared();
@@ -197,10 +207,29 @@ impl Rotation for Quaternion {
         Quaternion::new(real_part, imaginary_part)
     }
 
+    /// Get the quaternion representation of a rotation
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use orientations::*;
+    /// let r = Quaternion::identity();
+    /// let q = r.as_quaternion();
+    /// ```
     fn as_quaternion(&self) -> Quaternion {
         self.clone()
     }
-    
+
+    /// Compose two rotations
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use orientations::*;
+    /// let r = Quaternion::identity();
+    /// let q = Quaternion::identity();
+    /// assert_eq!(Quaternion::identity(), r.multiply(&q));
+    /// ```
     fn multiply<T: Rotation>(&self, r: &T) -> Quaternion {
         let rr = r.as_quaternion();
         let real_part = self.real_part * rr.real_part - self.imaginary_part.dot(&rr.imaginary_part);
@@ -301,5 +330,11 @@ mod tests {
         let q = Quaternion::new(0.2, Vector3d::new([0.3, 0.4, 0.5]));
         let expected = Quaternion::new(0.2, Vector3d::new([-0.3, -0.4, -0.5]));
         assert_eq!(expected, q.conjugate());
+    }
+
+    #[test]
+    fn quaternion_norm_squared() {
+        let q = Quaternion::new(0.2, Vector3d::new([0.3, 0.4, 0.5]));
+        assert_eq!(0.54, q.norm_squared());
     }
 }
