@@ -160,7 +160,7 @@ impl Quaternion {
         Quaternion::new(self.real_part, self.imaginary_part.negate())
     }
 
-    /// Compute the square of the (l2) norm of the quaternion
+    /// Compute the square of the (l2) norm of the quaternion.
     fn norm_squared(&self) -> f64 {
         self.real_part * self.real_part + self.imaginary_part.norm_squared()
     }
@@ -170,7 +170,7 @@ impl Quaternion {
 impl Rotation for Quaternion {
     type R = Quaternion;
 
-    /// Return the identity Quaternion
+    /// Return the identity Quaternion.
     ///
     /// # Examples
     ///
@@ -183,7 +183,7 @@ impl Rotation for Quaternion {
         Quaternion::new(1.0, Vector3d::zero())
     }
 
-    /// Calculate the inverse of a quaternion
+    /// Calculate the inverse of a quaternion.
     ///
     /// # Examples
     ///
@@ -207,20 +207,20 @@ impl Rotation for Quaternion {
         Quaternion::new(real_part, imaginary_part)
     }
 
-    /// Get the quaternion representation of a rotation
+    /// Get the quaternion representation of a rotation.
     ///
     /// # Examples
     ///
     /// ```
     /// use orientations::*;
     /// let r = Quaternion::identity();
-    /// let q = r.as_quaternion();
+    /// assert_eq!(Quaternion::identity(), r.as_quaternion());
     /// ```
     fn as_quaternion(&self) -> Quaternion {
         self.clone()
     }
 
-    /// Compose two rotations
+    /// Compose two rotations.
     ///
     /// # Examples
     ///
@@ -241,10 +241,36 @@ impl Rotation for Quaternion {
         Quaternion::new(real_part, imaginary_part)
     }
 
+    /// Compose two rotations.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use orientations::*;
+    /// let r = Quaternion::identity();
+    /// let q = Quaternion::identity();
+    ///
+    /// // r.before(&q) is the rotation equivalent to rotating first
+    /// // by r then by q.
+    /// assert_eq!(Quaternion::identity(), r.before(&q));
+    /// ```
     fn before<T: Rotation<R = T>>(&self, r: &T) -> T {
         r.multiply(self)
     }
 
+    /// Compose two rotations.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use orientations::*;
+    /// let r = Quaternion::identity();
+    /// let q = Quaternion::identity();
+    ///
+    /// // r.after(&q) is the rotation equivalent to rotating first
+    /// // by q then by r.
+    /// assert_eq!(Quaternion::identity(), r.after(&q));
+    /// ```
     fn after<T: Rotation<R = T>>(&self, r: &T) -> T {
         r.inverse().multiply(&self.inverse()).inverse()
     }
@@ -255,7 +281,7 @@ impl Rotation for Quaternion {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn vector3d_dot() {
         let x = Vector3d::new([1.0, 2.0, 3.0]);
@@ -336,5 +362,49 @@ mod tests {
     fn quaternion_norm_squared() {
         let q = Quaternion::new(0.2, Vector3d::new([0.3, 0.4, 0.5]));
         assert_eq!(0.54, q.norm_squared());
+    }
+
+    #[test]
+    fn quaternion_identity() {
+        let expected = Quaternion::new(1.0, Vector3d::zero());
+        assert_eq!(expected, Quaternion::identity());
+    }
+
+    // This doesn't work b/c we need an assert_approx_equal macro for
+    // quaternions.
+    //
+    // #[test]
+    // fn quaternion_inverse() {
+    //     let sqrt2 = (2 as f64).sqrt() / 2.0;
+    //     let q = Quaternion::new(sqrt2, Vector3d::new([sqrt2, 0.0, 0.0]));
+    //     let expected = Quaternion::new(sqrt2, Vector3d::new([-sqrt2, 0.0, 0.0]));
+    //     assert_eq!(expected, q.inverse());
+    // }
+
+    #[test]
+    fn quaternion_as_quaternion() {
+        let r = Quaternion::identity();
+        assert_eq!(Quaternion::identity(), r.as_quaternion());
+    }
+
+    #[test]
+    fn quaternion_multiply() {
+        let r = Quaternion::identity();
+        let q = Quaternion::identity();
+        assert_eq!(Quaternion::identity(), r.multiply(&q));
+    }
+
+    #[test]
+    fn quaternion_before() {
+        let r = Quaternion::identity();
+        let q = Quaternion::identity();
+        assert_eq!(Quaternion::identity(), r.before(&q));
+    }
+
+    #[test]
+    fn quaternion_after() {
+        let r = Quaternion::identity();
+        let q = Quaternion::identity();
+        assert_eq!(Quaternion::identity(), r.after(&q));
     }
 }
