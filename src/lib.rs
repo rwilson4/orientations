@@ -104,6 +104,27 @@ impl Vector3d {
         )
     }
 
+    /// Return a vector with the same direction as self but unit
+    /// magnitude. The return value is wrapped in an Option in case
+    /// the vector has zero mangitude, in which case the result will
+    /// be None.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use orientations::Vector3d;
+    /// let x = Vector3d::new([2.0, 0.0, 0.0]);
+    /// assert_eq!(Vector3d::x(), x.normalized().unwrap());
+    /// ```
+    pub fn normalized(&self) -> Result<Vector3d, String> {
+        let n = self.norm();
+        if n < DBL_EPSILON {
+            Err(String::from("Cannot normalize vector with zero magnitude"))
+        } else {
+            Ok(self.scalar_multiple(1.0 / n))
+        }
+    }
+
     /// Returns the zero vector.
     ///
     /// # Examples
@@ -115,6 +136,21 @@ impl Vector3d {
     /// ```
     pub fn zero() -> Vector3d {
         Vector3d::new( [0.0, 0.0, 0.0] )
+    }
+
+    /// Create a new unit Vector3d aligned with the x-axis.
+    pub fn x() -> Vector3d {
+        Vector3d::new( [1.0, 0.0, 0.0] )
+    }
+
+    /// Create a new unit Vector3d aligned with the x-axis.
+    pub fn y() -> Vector3d {
+        Vector3d::new( [0.0, 1.0, 0.0] )
+    }
+
+    /// Create a new unit Vector3d aligned with the x-axis.
+    pub fn z() -> Vector3d {
+        Vector3d::new( [0.0, 0.0, 1.0] )
     }
 }
 
@@ -130,6 +166,7 @@ pub trait Rotation {
     fn identity() -> Self::R;
     fn inverse(&self) -> Self::R;
     fn as_quaternion(&self) -> Quaternion;
+    fn angle_axis(&self) -> (f64, Vector3d);
     fn before<T: Rotation<R = T>>(&self, r: &T) -> T;
     fn after<T: Rotation<R = T>>(&self, r: &T) -> T;
     fn multiply<T: Rotation>(&self, r: &T) -> Self::R;
@@ -155,6 +192,24 @@ impl Quaternion {
         }
     }
 
+    /// Create a quaternion from the corresponding angle and axis of rotation.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use orientations::*;
+    /// let angle = std::f64::consts::PI / 2.0;
+    /// let q = Quaternion::from_angle_axis(angle, &Vector3d::x());
+    /// let sqrt2_over_2 = (2.0_f64).sqrt() / 2.0;
+    /// let expected = Quaternion::new(sqrt2_over_2, Vector3d::x().scalar_multiple(sqrt2_over_2));
+    /// // assert_eq!(expected, q);
+    /// ```
+    pub fn from_angle_axis(angle: f64, axis: &Vector3d) -> Quaternion {
+        let real_part = (angle / 2.0).cos();
+        let imaginary_part = axis.scalar_multiple((angle / 2.0).sin() / axis.norm());
+        Quaternion::new(real_part, imaginary_part)
+    }
+
     /// Compute the conjugate of a quaternion.
     fn conjugate(&self) -> Quaternion {
         Quaternion::new(self.real_part, self.imaginary_part.negate())
@@ -163,6 +218,10 @@ impl Quaternion {
     /// Compute the square of the (l2) norm of the quaternion.
     fn norm_squared(&self) -> f64 {
         self.real_part * self.real_part + self.imaginary_part.norm_squared()
+    }
+
+    fn norm(&self) -> f64 {
+        self.norm_squared().sqrt()
     }
 
 }
@@ -189,9 +248,10 @@ impl Rotation for Quaternion {
     ///
     /// ```
     /// use orientations::*;
-    /// let sqrt2 = (2 as f64).sqrt() / 2.0;
-    /// let q = Quaternion::new(sqrt2, Vector3d::new([sqrt2, 0.0, 0.0]));
-    /// let expected = Quaternion::new(sqrt2, Vector3d::new([-sqrt2, 0.0, 0.0]));
+    /// let angle = std::f64::consts::PI / 2.0;
+    /// let q = Quaternion::from_angle_axis(angle, &Vector3d::x());
+    /// let expected = Quaternion::from_angle_axis(angle, &Vector3d::x().negate());
+    /// assert_eq!(expected, q.inverse());
     /// ```
     fn inverse(&self) -> Quaternion {
         // Check that norm is > 0
@@ -213,11 +273,44 @@ impl Rotation for Quaternion {
     ///
     /// ```
     /// use orientations::*;
-    /// let r = Quaternion::identity();
-    /// assert_eq!(Quaternion::identity(), r.as_quaternion());
+    /// let r = Quaternion::from_angle_axis(0.03, &Vector3d::x());
+    /// assert_eq!(r, r.as_quaternion());
     /// ```
     fn as_quaternion(&self) -> Quaternion {
         self.clone()
+    }
+
+    /// Get the angle and axis associated with a rotation. If the
+    /// rotation is the identity, the z-axis will be returned.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use orientations::*;
+    /// let q = Quaternion::identity();
+    /// let (angle, axis) = q.angle_axis();
+    /// assert_eq!(angle, 0.0);
+    /// assert_eq!(axis, Vector3d::z());
+    /// ```
+    ///
+    /// ```
+    /// use orientations::*;
+    /// let theta = 0.03;
+    /// let xyz = Vector3d::new([1.0, 2.0, 3.0]).normalized().unwrap();
+    /// let q = Quaternion::from_angle_axis(theta, &xyz);
+    /// let (angle, axis) = q.angle_axis();
+    /// assert_eq!(theta, angle);
+    /// assert_eq!(xyz, axis);
+    /// ```
+    fn angle_axis(&self) -> (f64, Vector3d) {
+        let n = self.norm();
+        let angle = (self.real_part / n).acos() * 2.0;
+        let axis = match self.imaginary_part.normalized() {
+            Ok(axis) => axis,
+            Err(_error) => Vector3d::z()
+        };
+        
+        (angle, axis)
     }
 
     /// Compose two rotations.
@@ -226,8 +319,9 @@ impl Rotation for Quaternion {
     ///
     /// ```
     /// use orientations::*;
-    /// let r = Quaternion::identity();
-    /// let q = Quaternion::identity();
+    /// let angle = std::f64::consts::PI / 2.0;
+    /// let r = Quaternion::from_angle_axis(angle, &Vector3d::x());
+    /// let q = Quaternion::from_angle_axis(angle, &Vector3d::x().negate());
     /// assert_eq!(Quaternion::identity(), r.multiply(&q));
     /// ```
     fn multiply<T: Rotation>(&self, r: &T) -> Quaternion {
@@ -247,12 +341,13 @@ impl Rotation for Quaternion {
     ///
     /// ```
     /// use orientations::*;
-    /// let r = Quaternion::identity();
-    /// let q = Quaternion::identity();
-    ///
+    /// let angle = std::f64::consts::PI / 2.0;
+    /// let r = Quaternion::from_angle_axis(angle, &Vector3d::x());
+    /// let q = Quaternion::from_angle_axis(angle, &Vector3d::y());
+    /// let expected = Quaternion::from_angle_axis(angle, &Vector3d::z().negate());
     /// // r.before(&q) is the rotation equivalent to rotating first
     /// // by r then by q.
-    /// assert_eq!(Quaternion::identity(), r.before(&q));
+    /// assert_eq!(expected, r.before(&q));
     /// ```
     fn before<T: Rotation<R = T>>(&self, r: &T) -> T {
         r.multiply(self)
