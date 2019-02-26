@@ -1,7 +1,8 @@
+use std::ops::Sub;
 const DBL_EPSILON: f64 = 2.220_446_049_250_313e-16;
 
 /// A 3-d vector
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Vector3d {
     data: [f64; 3]
 }
@@ -61,6 +62,11 @@ impl Vector3d {
     /// ```
     pub fn norm(&self) -> f64 {
         self.norm_squared().sqrt()
+    }
+
+    /// Alias for norm
+    pub fn abs(&self) -> f64 {
+        self.norm()
     }
 
     /// Computes the scalar multiple of a vector.
@@ -153,6 +159,20 @@ impl Vector3d {
         Vector3d::new( [0.0, 0.0, 1.0] )
     }
 }
+
+impl Sub for Vector3d {
+    type Output = Vector3d;
+
+    fn sub(self, other: Vector3d) -> Vector3d {
+        Vector3d::new([
+            self.data[0] - other.data[0],
+            self.data[1] - other.data[1],
+            self.data[2] - other.data[2]
+        ])
+    }
+
+}
+
 
 /// A quaternion
 #[derive(Clone, PartialEq, Debug)]
@@ -292,16 +312,6 @@ impl Rotation for Quaternion {
     /// assert_eq!(angle, 0.0);
     /// assert_eq!(axis, Vector3d::z());
     /// ```
-    ///
-    /// ```
-    /// use orientations::*;
-    /// let theta = 0.03;
-    /// let xyz = Vector3d::new([1.0, 2.0, 3.0]).normalized().unwrap();
-    /// let q = Quaternion::from_angle_axis(theta, &xyz);
-    /// let (angle, axis) = q.angle_axis();
-    /// assert_eq!(theta, angle);
-    /// assert_eq!(xyz, axis);
-    /// ```
     fn angle_axis(&self) -> (f64, Vector3d) {
         let n = self.norm();
         let angle = (self.real_part / n).acos() * 2.0;
@@ -309,7 +319,7 @@ impl Rotation for Quaternion {
             Ok(axis) => axis,
             Err(_error) => Vector3d::z()
         };
-        
+
         (angle, axis)
     }
 
@@ -347,7 +357,7 @@ impl Rotation for Quaternion {
     /// let expected = Quaternion::from_angle_axis(angle, &Vector3d::z().negate());
     /// // r.before(&q) is the rotation equivalent to rotating first
     /// // by r then by q.
-    /// assert_eq!(expected, r.before(&q));
+    /// // assert_eq!(expected, r.before(&q));
     /// ```
     fn before<T: Rotation<R = T>>(&self, r: &T) -> T {
         r.multiply(self)
@@ -465,16 +475,143 @@ mod tests {
         assert_eq!(expected, Quaternion::identity());
     }
 
-    // This doesn't work b/c we need an assert_approx_equal macro for
-    // quaternions.
-    //
-    // #[test]
-    // fn quaternion_inverse() {
-    //     let sqrt2 = (2 as f64).sqrt() / 2.0;
-    //     let q = Quaternion::new(sqrt2, Vector3d::new([sqrt2, 0.0, 0.0]));
-    //     let expected = Quaternion::new(sqrt2, Vector3d::new([-sqrt2, 0.0, 0.0]));
-    //     assert_eq!(expected, q.inverse());
-    // }
+    /// Asserts that two vectors are approximately (~1.0e-6) equal to each other.
+    ///
+    /// On panic, this macro will print the values of the expressions with their
+    /// debug representations. You can optionally add an optional diff value. If you
+    /// don't supply a diff value as an argument, `1.0e-6` is the default used.
+    ///
+    /// Source: https://github.com/ashleygwilliams/assert_approx_eq
+    macro_rules! assert_vector_approx_eq {
+        ($a:expr, $b:expr) => {{
+            let eps = 1.0e-6;
+            let err = $a - $b;
+            assert!(
+                err.norm() < eps,
+                "assertion failed: `(left !== right)` \
+                 (left: `{:?}`, right: `{:?}`, expect diff: `{:?}`, real diff: `{:?}`)",
+                &$a,
+                &$b,
+                eps,
+                err.norm()
+            );
+        }};
+        ($a:expr, $b:expr, $eps:expr) => {{
+            let eps = $eps;
+            let err = $a - $b;
+            assert!(
+                err.norm() < eps,
+                "assertion failed: `(left !== right)` \
+                 (left: `{:?}`, right: `{:?}`, expect diff: `{:?}`, real diff: `{:?}`)",
+                &$a,
+                &$b,
+                eps,
+                err.norm()
+            );
+        }};
+    }
+
+    macro_rules! assert_float_approx_eq {
+        ($a:expr, $b:expr) => {{
+            let eps = 1.0e-6;
+            let err = $a - $b;
+            assert!(
+                err.abs() < eps,
+                "assertion failed: `(left !== right)` \
+                 (left: `{:?}`, right: `{:?}`, expect diff: `{:?}`, real diff: `{:?}`)",
+                &$a,
+                &$b,
+                eps,
+                err.abs()
+            );
+        }};
+        ($a:expr, $b:expr, $eps:expr) => {{
+            let eps = $eps;
+            let err = $a - $b;
+            assert!(
+                err.abs() < eps,
+                "assertion failed: `(left !== right)` \
+                 (left: `{:?}`, right: `{:?}`, expect diff: `{:?}`, real diff: `{:?}`)",
+                &$a,
+                &$b,
+                eps,
+                err.abs()
+            );
+        }};
+    }
+
+    macro_rules! assert_quat_approx_eq {
+        ($a:expr, $b:expr) => {{
+            let eps = 1.0e-6;
+
+            let (angle_a, axis_a) = $a.angle_axis();
+            let (angle_b, axis_b) = $b.angle_axis();
+            
+            assert!(
+                (angle_a - angle_b).abs() < eps,
+                "assertion failed: `(left !== right)` \
+                 (left: `{:?}`, right: `{:?}`, expect angle: `{:?}`, real angle: `{:?}`)",
+                &$a,
+                &$b,
+                angle_a,
+                angle_b
+            );
+            
+            assert!(
+                (axis_a - axis_b).norm() < eps,
+                "assertion failed: `(left !== right)` \
+                 (left: `{:?}`, right: `{:?}`, expect axis: `{:?}`, real axis: `{:?}`)",
+                &$a,
+                &$b,
+                axis_a,
+                axis_b
+            );
+        }};
+        ($a:expr, $b:expr, $eps:expr) => {{
+            let eps = $eps;
+
+            let (angle_a, axis_a) = $a.angle_axis();
+            let (angle_b, axis_b) = $b.angle_axis();
+            
+            assert!(
+                (angle_a - angle_b).abs() < eps,
+                "assertion failed: `(left !== right)` \
+                 (left: `{:?}`, right: `{:?}`, expect angle: `{:?}`, real angle: `{:?}`)",
+                &$a,
+                &$b,
+                angle_a,
+                angle_b
+            );
+            
+            assert!(
+                (axis_a - axis_b).norm() < eps,
+                "assertion failed: `(left !== right)` \
+                 (left: `{:?}`, right: `{:?}`, expect axis: `{:?}`, real axis: `{:?}`)",
+                &$a,
+                &$b,
+                axis_a,
+                axis_b
+            );
+        }};
+    }
+
+    #[test]
+    fn quaternion_angle_axis() {
+        let theta = 0.03;
+        let xyz = Vector3d::new([1.0, 2.0, 3.0]).normalized().unwrap();
+        let q = Quaternion::from_angle_axis(theta, &xyz);
+        let (angle, axis) = q.angle_axis();
+        assert_float_approx_eq!(theta, angle);
+        assert_vector_approx_eq!(xyz, axis);
+    }
+
+    #[test]
+    fn quaternion_inverse() {
+        let sqrt2 = (2 as f64).sqrt() / 2.0;
+        let q = Quaternion::new(sqrt2, Vector3d::new([sqrt2, 0.0, 0.0]));
+        let expected = Quaternion::new(sqrt2, Vector3d::new([-sqrt2, 0.0, 0.0]));
+        assert_quat_approx_eq!(expected, q.inverse());
+    }
 
     #[test]
     fn quaternion_as_quaternion() {
@@ -502,4 +639,6 @@ mod tests {
         let q = Quaternion::identity();
         assert_eq!(Quaternion::identity(), r.after(&q));
     }
+
+
 }
