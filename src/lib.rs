@@ -375,7 +375,8 @@ impl Rotation for Quaternion {
     }
 
     /// Get the angle and axis associated with a rotation. If the
-    /// rotation is the identity, the z-axis will be returned.
+    /// rotation is the identity (and therefore there is no axis of
+    /// rotation), the z-axis will be returned.
     ///
     /// # Examples
     ///
@@ -388,6 +389,12 @@ impl Rotation for Quaternion {
     /// ```
     fn angle_axis(&self) -> (f64, Vector3d) {
         let n = self.norm();
+        if n <= DBL_EPSILON {
+            // If the quaternion is too close to zero, just return the
+            // identity.
+            return Quaternion::identity().angle_axis()
+        }
+
         let angle = (self.real_part / n).acos() * 2.0;
         let axis = match self.imaginary_part.normalized() {
             Ok(axis) => axis,
@@ -491,6 +498,13 @@ mod tests {
         assert_eq!(expected, x.cross(&y));
     }
 
+    #[test]
+    fn vector3d_x_cross_y_equals_z() {
+        let x = Vector3d::x();
+        let y = Vector3d::y();
+        assert_eq!(Vector3d::z(), x.cross(&y));
+    }
+
     macro_rules! norm_squared_tests {
         ($($name:ident: $value:expr,)*) => {
         $(
@@ -527,6 +541,15 @@ mod tests {
         zero_dot_x_is_zero_1: Vector3d::new([-1.0, 2.0, 3.0]),
         zero_dot_x_is_zero_2: Vector3d::new([1.0, -2.0, 3.0]),
         zero_dot_x_is_zero_3: Vector3d::new([1.0, 2.0, -3.0]),
+    }
+
+    #[test]
+    fn vector3d_zero_normalized() {
+        let zero = Vector3d::zero();
+        match zero.normalized() {
+            Ok(_) => assert!(false, "Should not be able to normalize zero vector"),
+            Err(_) => assert!(true)
+        }
     }
 
     #[test]
@@ -726,11 +749,28 @@ mod tests {
     }
 
     #[test]
+    fn quaternion_zero_angle_axis() {
+        let q = Quaternion::new(0.0, Vector3d::zero());
+        let (angle, axis) = q.angle_axis();
+        assert_eq!(0.0, angle);
+        assert_eq!(Vector3d::z(), axis);
+    }
+
+    #[test]
     fn quaternion_inverse() {
         let sqrt2 = (2 as f64).sqrt() / 2.0;
         let q = Quaternion::new(sqrt2, Vector3d::new([sqrt2, 0.0, 0.0]));
         let expected = Quaternion::new(sqrt2, Vector3d::new([-sqrt2, 0.0, 0.0]));
         assert_quat_approx_eq!(expected, q.inverse().unwrap());
+    }
+
+    #[test]
+    fn quaternion_zero_inverse() {
+        let zero = Quaternion::new(0.0, Vector3d::new([0.0, 0.0, 0.0]));
+        match zero.inverse() {
+            Ok(_) => assert!(false, "Should not be able to invert zero"),
+            Err(_) => assert!(true)
+        }
     }
 
     #[test]
