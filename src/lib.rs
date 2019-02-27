@@ -133,6 +133,9 @@ impl Vector3d {
     /// the vector has zero mangitude, in which case the result will
     /// be an error that the caller must handle.
     ///
+    /// # Errors
+    /// If vector has norm close to zero, the result will be an Error.
+    ///
     /// # Examples
     ///
     /// ```
@@ -275,6 +278,9 @@ impl Quaternion {
 
     /// Create a quaternion from the corresponding angle and axis of rotation.
     ///
+    /// # Panics
+    /// Panics if axis has norm close to zero.
+    ///
     /// # Examples
     ///
     /// ```
@@ -283,8 +289,14 @@ impl Quaternion {
     /// let q = Quaternion::from_angle_axis(angle, &Vector3d::x());
     /// ```
     pub fn from_angle_axis(angle: f64, axis: &Vector3d) -> Quaternion {
-        let real_part = (angle / 2.0).cos();
-        let imaginary_part = axis.scalar_multiple((angle / 2.0).sin() / axis.norm());
+        let axis_norm = axis.norm();
+        if axis_norm < DBL_EPSILON {
+            panic!("Axis has zero norm")
+        }
+
+        let half_angle = angle / 2.0;
+        let real_part = half_angle.cos();
+        let imaginary_part = axis.scalar_multiple(half_angle.sin() / axis_norm);
         Quaternion::new(real_part, imaginary_part)
     }
 
@@ -337,6 +349,13 @@ impl Rotation for Quaternion {
     }
 
     /// Calculate the inverse of a quaternion.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the quaternion is close to zero. This can
+    /// happen if Quaternion::new() is misused (e.g. by instantiating
+    /// an all-zero quaternion), or through the accumulation of
+    /// floating point errors.
     ///
     /// # Examples
     ///
@@ -422,19 +441,6 @@ impl Rotation for Quaternion {
         let imaginary_part = rr.imaginary_part.scalar_multiple(self.real_part)
             + self.imaginary_part.scalar_multiple(rr.real_part)
             + self.imaginary_part.cross(&rr.imaginary_part);
-        // let q_i = self.real_part * rr.imaginary_part.data[0]
-        //     + self.imaginary_part.data[0] * rr.real_part
-        //     + self.imaginary_part.data[1] * rr.imaginary_part.data[2]
-        //     - self.imaginary_part.data[2] * rr.imaginary_part.data[1];
-        // let q_j = self.real_part * rr.imaginary_part.data[1]
-        //     + self.imaginary_part.data[1] * rr.real_part
-        //     + self.imaginary_part.data[2] * rr.imaginary_part.data[0]
-        //     - self.imaginary_part.data[0] * rr.imaginary_part.data[2];
-        // let q_k = self.real_part * rr.imaginary_part.data[2]
-        //     + self.imaginary_part.data[2] * rr.real_part
-        //     + self.imaginary_part.data[0] * rr.imaginary_part.data[1]
-        //     - self.imaginary_part.data[1] * rr.imaginary_part.data[0];
-        // let imaginary_part = Vector3d::new( [q_i, q_j, q_k] );
 
         Quaternion::new(real_part, imaginary_part)
     }
@@ -458,6 +464,13 @@ impl Rotation for Quaternion {
 
     /// Compose two rotations.
     ///
+    /// # Panics
+    ///
+    /// This function *can* panic if the inverse of the operand is
+    /// poorly defined. See the comment in the example below for more
+    /// specific context. This doesn't happen in the `before` function
+    /// due to implementation details.
+    ///
     /// # Examples
     ///
     /// ```
@@ -466,7 +479,8 @@ impl Rotation for Quaternion {
     /// let r = Quaternion::identity();
     ///
     /// // q.after(&r) is the rotation equivalent to rotating first
-    /// // by r then by q.
+    /// // by r then by q. This will panic if r is close to zero,
+    /// // in which case it is not a valid rotation!
     /// assert_eq!(Quaternion::identity(), q.after(&r));
     /// ```
     fn after<T: Rotation<R = T>>(&self, r: &T) -> T {
@@ -717,6 +731,12 @@ mod tests {
         let sqrt2_over_2 = (2.0_f64).sqrt() / 2.0;
         let expected = Quaternion::new(sqrt2_over_2, Vector3d::x().scalar_multiple(sqrt2_over_2));
         assert_quat_approx_eq!(expected, q);
+    }
+
+    #[test]
+    #[should_panic]
+    fn quaternion_from_angle_zero_axis() {
+        Quaternion::from_angle_axis(0.0, &Vector3d::zero());
     }
 
     #[test]
