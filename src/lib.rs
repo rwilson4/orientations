@@ -1,8 +1,13 @@
-use std::ops::Sub;
+#![deny(missing_docs)]
+
+//! A library for Rotations and Orientations.
+
+use std::ops::{Add, Sub};
+use std::fmt;
 const DBL_EPSILON: f64 = 2.220_446_049_250_313e-16;
 
 /// A 3-d vector
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq)]
 pub struct Vector3d {
     data: [f64; 3]
 }
@@ -38,6 +43,24 @@ impl Vector3d {
         dot_product
     }
 
+    /// Computes the cross product of two vectors.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use orientations::Vector3d;
+    /// let x = Vector3d::new([1.0, 2.0, 3.0]);
+    /// let y = Vector3d::new([4.0, 5.0, 6.0]);
+    /// let expected = Vector3d::new([-3.0, 6.0, -3.0]);
+    /// assert_eq!(expected, x.cross(&y));
+    /// ```
+    pub fn cross(&self, other: &Vector3d) -> Vector3d {
+        let x1 = self.data[1] * other.data[2] - self.data[2] * other.data[1];
+        let x2 = self.data[2] * other.data[0] - self.data[0] * other.data[2];
+        let x3 = self.data[0] * other.data[1] - self.data[1] * other.data[0];
+        Vector3d::new([x1, x2, x3])
+    }
+
     /// Computes the square of the (l2) norm of a vector.
     ///
     /// # Examples
@@ -62,11 +85,6 @@ impl Vector3d {
     /// ```
     pub fn norm(&self) -> f64 {
         self.norm_squared().sqrt()
-    }
-
-    /// Alias for norm
-    pub fn abs(&self) -> f64 {
-        self.norm()
     }
 
     /// Computes the scalar multiple of a vector.
@@ -111,9 +129,9 @@ impl Vector3d {
     }
 
     /// Return a vector with the same direction as self but unit
-    /// magnitude. The return value is wrapped in an Option in case
+    /// magnitude. The return value is wrapped in a Result in case
     /// the vector has zero mangitude, in which case the result will
-    /// be None.
+    /// be an error that the caller must handle.
     ///
     /// # Examples
     ///
@@ -160,9 +178,24 @@ impl Vector3d {
     }
 }
 
+impl Add for Vector3d {
+    type Output = Vector3d;
+
+    /// Add two vectors.
+    fn add(self, other: Vector3d) -> Vector3d {
+        Vector3d::new([
+            self.data[0] + other.data[0],
+            self.data[1] + other.data[1],
+            self.data[2] + other.data[2]
+        ])
+    }
+
+}
+
 impl Sub for Vector3d {
     type Output = Vector3d;
 
+    /// Subtract a vector from another.
     fn sub(self, other: Vector3d) -> Vector3d {
         Vector3d::new([
             self.data[0] - other.data[0],
@@ -173,26 +206,54 @@ impl Sub for Vector3d {
 
 }
 
-
-/// A quaternion
-#[derive(Clone, PartialEq, Debug)]
-pub struct Quaternion {
-    real_part: f64,
-    imaginary_part: Vector3d
+impl fmt::Debug for Vector3d {
+    /// Pretty-print a vector.
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[{}, {}, {}]",
+               self.data[0], self.data[1], self.data[2])
+    }
 }
 
+
+/// Rotation trait
 pub trait Rotation {
+    /// The representation of the Rotation.
+    /// Every implementor must specify this type. Generally, it will
+    /// be the same type as the implementor. For example, a Quaternion
+    /// will specify type R = Quaternion.
     type R: Rotation;
+
+    /// The identity rotation equivalent to no rotation at all.
     fn identity() -> Self::R;
-    fn inverse(&self) -> Self::R;
+
+    /// The inverse of a rotation.
+    fn inverse(&self) -> Result<Self::R, String>;
+
+    /// Get the quaternion representation of a rotation.
     fn as_quaternion(&self) -> Quaternion;
+
+    /// Get the angle and axis associated with a rotation.
     fn angle_axis(&self) -> (f64, Vector3d);
+
+    /// Compose two rotations.
     fn before<T: Rotation<R = T>>(&self, r: &T) -> T;
+
+    /// Compose two rotations.
     fn after<T: Rotation<R = T>>(&self, r: &T) -> T;
+
+    /// Convenience function; should not be used.
     fn multiply<T: Rotation>(&self, r: &T) -> Self::R;
 }
 
+/// Orientation trait
 pub trait Orientation {
+}
+
+/// A quaternion
+#[derive(Clone, PartialEq)]
+pub struct Quaternion {
+    real_part: f64,
+    imaginary_part: Vector3d
 }
 
 impl Quaternion {
@@ -220,9 +281,6 @@ impl Quaternion {
     /// use orientations::*;
     /// let angle = std::f64::consts::PI / 2.0;
     /// let q = Quaternion::from_angle_axis(angle, &Vector3d::x());
-    /// let sqrt2_over_2 = (2.0_f64).sqrt() / 2.0;
-    /// let expected = Quaternion::new(sqrt2_over_2, Vector3d::x().scalar_multiple(sqrt2_over_2));
-    /// // assert_eq!(expected, q);
     /// ```
     pub fn from_angle_axis(angle: f64, axis: &Vector3d) -> Quaternion {
         let real_part = (angle / 2.0).cos();
@@ -240,10 +298,26 @@ impl Quaternion {
         self.real_part * self.real_part + self.imaginary_part.norm_squared()
     }
 
+    /// Compute the (l2) norm of the quaternion.
     fn norm(&self) -> f64 {
         self.norm_squared().sqrt()
     }
 
+}
+
+impl fmt::Debug for Quaternion {
+    /// Pretty-print a quaternion.
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let signs: Vec<char> = self.imaginary_part.data.into_iter()
+            .map(|x| if x >= &0.0 {'+'} else {'-'})
+            .collect();
+
+        write!(f, "Quaternion {} {} {}i {} {}j {} {}k",
+               self.real_part,
+               signs[0], self.imaginary_part.data[0].abs(),
+               signs[1], self.imaginary_part.data[1].abs(),
+               signs[2], self.imaginary_part.data[2].abs())
+    }
 }
 
 impl Rotation for Quaternion {
@@ -271,20 +345,20 @@ impl Rotation for Quaternion {
     /// let angle = std::f64::consts::PI / 2.0;
     /// let q = Quaternion::from_angle_axis(angle, &Vector3d::x());
     /// let expected = Quaternion::from_angle_axis(angle, &Vector3d::x().negate());
-    /// assert_eq!(expected, q.inverse());
+    /// assert_eq!(expected, q.inverse().unwrap());
     /// ```
-    fn inverse(&self) -> Quaternion {
+    fn inverse(&self) -> Result<Quaternion, String> {
         // Check that norm is > 0
         let norm_squared = self.norm_squared();
         if norm_squared < DBL_EPSILON {
-            panic!("Quaternion close to zero; cannot invert.")
+            return Err(String::from("Quaternion close to zero; cannot invert."))
         }
 
         let inv_norm_squared = 1.0 / norm_squared;
         let c = self.conjugate();
         let real_part = c.real_part * inv_norm_squared;
         let imaginary_part = c.imaginary_part.scalar_multiple(inv_norm_squared);
-        Quaternion::new(real_part, imaginary_part)
+        Ok(Quaternion::new(real_part, imaginary_part))
     }
 
     /// Get the quaternion representation of a rotation.
@@ -333,14 +407,27 @@ impl Rotation for Quaternion {
     /// let r = Quaternion::from_angle_axis(angle, &Vector3d::x());
     /// let q = Quaternion::from_angle_axis(angle, &Vector3d::x().negate());
     /// assert_eq!(Quaternion::identity(), r.multiply(&q));
+    /// assert_eq!(Quaternion::identity(), q.multiply(&r));
     /// ```
     fn multiply<T: Rotation>(&self, r: &T) -> Quaternion {
         let rr = r.as_quaternion();
         let real_part = self.real_part * rr.real_part - self.imaginary_part.dot(&rr.imaginary_part);
-        let q_i = self.imaginary_part.data[1] * rr.imaginary_part.data[2] - self.imaginary_part.data[2] * rr.imaginary_part.data[1];
-        let q_j = self.imaginary_part.data[2] * rr.imaginary_part.data[0] - self.imaginary_part.data[0] * rr.imaginary_part.data[2];
-        let q_k = self.imaginary_part.data[0] * rr.imaginary_part.data[1] - self.imaginary_part.data[1] * rr.imaginary_part.data[0];
-        let imaginary_part = Vector3d::new( [q_i, q_j, q_k] );
+        let imaginary_part = rr.imaginary_part.scalar_multiple(self.real_part)
+            + self.imaginary_part.scalar_multiple(rr.real_part)
+            + self.imaginary_part.cross(&rr.imaginary_part);
+        // let q_i = self.real_part * rr.imaginary_part.data[0]
+        //     + self.imaginary_part.data[0] * rr.real_part
+        //     + self.imaginary_part.data[1] * rr.imaginary_part.data[2]
+        //     - self.imaginary_part.data[2] * rr.imaginary_part.data[1];
+        // let q_j = self.real_part * rr.imaginary_part.data[1]
+        //     + self.imaginary_part.data[1] * rr.real_part
+        //     + self.imaginary_part.data[2] * rr.imaginary_part.data[0]
+        //     - self.imaginary_part.data[0] * rr.imaginary_part.data[2];
+        // let q_k = self.real_part * rr.imaginary_part.data[2]
+        //     + self.imaginary_part.data[2] * rr.real_part
+        //     + self.imaginary_part.data[0] * rr.imaginary_part.data[1]
+        //     - self.imaginary_part.data[1] * rr.imaginary_part.data[0];
+        // let imaginary_part = Vector3d::new( [q_i, q_j, q_k] );
 
         Quaternion::new(real_part, imaginary_part)
     }
@@ -351,13 +438,12 @@ impl Rotation for Quaternion {
     ///
     /// ```
     /// use orientations::*;
-    /// let angle = std::f64::consts::PI / 2.0;
-    /// let r = Quaternion::from_angle_axis(angle, &Vector3d::x());
-    /// let q = Quaternion::from_angle_axis(angle, &Vector3d::y());
-    /// let expected = Quaternion::from_angle_axis(angle, &Vector3d::z().negate());
-    /// // r.before(&q) is the rotation equivalent to rotating first
-    /// // by r then by q.
-    /// // assert_eq!(expected, r.before(&q));
+    /// let q = Quaternion::identity();
+    /// let r = Quaternion::identity();
+    ///
+    /// // q.before(&r) is the rotation equivalent to rotating first
+    /// // by q then by r.
+    /// assert_eq!(Quaternion::identity(), q.before(&r));
     /// ```
     fn before<T: Rotation<R = T>>(&self, r: &T) -> T {
         r.multiply(self)
@@ -369,15 +455,15 @@ impl Rotation for Quaternion {
     ///
     /// ```
     /// use orientations::*;
-    /// let r = Quaternion::identity();
     /// let q = Quaternion::identity();
+    /// let r = Quaternion::identity();
     ///
-    /// // r.after(&q) is the rotation equivalent to rotating first
-    /// // by q then by r.
-    /// assert_eq!(Quaternion::identity(), r.after(&q));
+    /// // q.after(&r) is the rotation equivalent to rotating first
+    /// // by r then by q.
+    /// assert_eq!(Quaternion::identity(), q.after(&r));
     /// ```
     fn after<T: Rotation<R = T>>(&self, r: &T) -> T {
-        r.inverse().multiply(&self.inverse()).inverse()
+        r.inverse().unwrap().multiply(&self.inverse().unwrap()).inverse().unwrap()
     }
 
 }
@@ -386,6 +472,7 @@ impl Rotation for Quaternion {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::f64::consts::PI;
 
     #[test]
     fn vector3d_dot() {
@@ -394,6 +481,14 @@ mod tests {
         let expected = 32.0;
         let actual = x.dot(&y);
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn vector3d_cross() {
+        let x = Vector3d::new([1.0, 2.0, 3.0]);
+        let y = Vector3d::new([4.0, 5.0, 6.0]);
+        let expected = Vector3d::new([-3.0, 6.0, -3.0]);
+        assert_eq!(expected, x.cross(&y));
     }
 
     macro_rules! norm_squared_tests {
@@ -454,25 +549,6 @@ mod tests {
         let x = Vector3d::new([1.0, 2.0, 3.0]);
         let expected = Vector3d::new([-1.0, -2.0, -3.0]);
         assert_eq!(expected, x.negate());
-    }
-
-    #[test]
-    fn quaternion_conjugate() {
-        let q = Quaternion::new(0.2, Vector3d::new([0.3, 0.4, 0.5]));
-        let expected = Quaternion::new(0.2, Vector3d::new([-0.3, -0.4, -0.5]));
-        assert_eq!(expected, q.conjugate());
-    }
-
-    #[test]
-    fn quaternion_norm_squared() {
-        let q = Quaternion::new(0.2, Vector3d::new([0.3, 0.4, 0.5]));
-        assert_eq!(0.54, q.norm_squared());
-    }
-
-    #[test]
-    fn quaternion_identity() {
-        let expected = Quaternion::new(1.0, Vector3d::zero());
-        assert_eq!(expected, Quaternion::identity());
     }
 
     /// Asserts that two vectors are approximately (~1.0e-6) equal to each other.
@@ -546,23 +622,31 @@ mod tests {
 
             let (angle_a, axis_a) = $a.angle_axis();
             let (angle_b, axis_b) = $b.angle_axis();
-            
+
             assert!(
                 (angle_a - angle_b).abs() < eps,
                 "assertion failed: `(left !== right)` \
-                 (left: `{:?}`, right: `{:?}`, expect angle: `{:?}`, real angle: `{:?}`)",
+                 (left: `{:?}`, right: `{:?}`, \
+                 expect angle: `{:?}`, real angle: `{:?}`) \
+                 expect axis: `{:?}`, real axis: `{:?}`",
                 &$a,
                 &$b,
                 angle_a,
-                angle_b
+                angle_b,
+                axis_a,
+                axis_b
             );
-            
+
             assert!(
                 (axis_a - axis_b).norm() < eps,
                 "assertion failed: `(left !== right)` \
-                 (left: `{:?}`, right: `{:?}`, expect axis: `{:?}`, real axis: `{:?}`)",
+                 (left: `{:?}`, right: `{:?}`, \
+                 expect angle: `{:?}`, real angle: `{:?}`) \
+                 expect axis: `{:?}`, real axis: `{:?}`",
                 &$a,
                 &$b,
+                angle_a,
+                angle_b,
                 axis_a,
                 axis_b
             );
@@ -572,27 +656,63 @@ mod tests {
 
             let (angle_a, axis_a) = $a.angle_axis();
             let (angle_b, axis_b) = $b.angle_axis();
-            
+
             assert!(
                 (angle_a - angle_b).abs() < eps,
                 "assertion failed: `(left !== right)` \
-                 (left: `{:?}`, right: `{:?}`, expect angle: `{:?}`, real angle: `{:?}`)",
+                 (left: `{:?}`, right: `{:?}`, \
+                 expect angle: `{:?}`, real angle: `{:?}`) \
+                 expect axis: `{:?}`, real axis: `{:?}`",
                 &$a,
                 &$b,
                 angle_a,
-                angle_b
+                angle_b,
+                axis_a,
+                axis_b
             );
-            
+
             assert!(
                 (axis_a - axis_b).norm() < eps,
                 "assertion failed: `(left !== right)` \
-                 (left: `{:?}`, right: `{:?}`, expect axis: `{:?}`, real axis: `{:?}`)",
+                 (left: `{:?}`, right: `{:?}`, \
+                 expect angle: `{:?}`, real angle: `{:?}`) \
+                 expect axis: `{:?}`, real axis: `{:?}`",
                 &$a,
                 &$b,
+                angle_a,
+                angle_b,
                 axis_a,
                 axis_b
             );
         }};
+    }
+
+    #[test]
+    fn quaternion_from_angle_axis() {
+        let angle = PI / 2.0;
+        let q = Quaternion::from_angle_axis(angle, &Vector3d::x());
+        let sqrt2_over_2 = (2.0_f64).sqrt() / 2.0;
+        let expected = Quaternion::new(sqrt2_over_2, Vector3d::x().scalar_multiple(sqrt2_over_2));
+        assert_quat_approx_eq!(expected, q);
+    }
+
+    #[test]
+    fn quaternion_conjugate() {
+        let q = Quaternion::new(0.2, Vector3d::new([0.3, 0.4, 0.5]));
+        let expected = Quaternion::new(0.2, Vector3d::new([-0.3, -0.4, -0.5]));
+        assert_eq!(expected, q.conjugate());
+    }
+
+    #[test]
+    fn quaternion_norm_squared() {
+        let q = Quaternion::new(0.2, Vector3d::new([0.3, 0.4, 0.5]));
+        assert_eq!(0.54, q.norm_squared());
+    }
+
+    #[test]
+    fn quaternion_identity() {
+        let expected = Quaternion::new(1.0, Vector3d::zero());
+        assert_eq!(expected, Quaternion::identity());
     }
 
     #[test]
@@ -610,7 +730,7 @@ mod tests {
         let sqrt2 = (2 as f64).sqrt() / 2.0;
         let q = Quaternion::new(sqrt2, Vector3d::new([sqrt2, 0.0, 0.0]));
         let expected = Quaternion::new(sqrt2, Vector3d::new([-sqrt2, 0.0, 0.0]));
-        assert_quat_approx_eq!(expected, q.inverse());
+        assert_quat_approx_eq!(expected, q.inverse().unwrap());
     }
 
     #[test]
@@ -621,23 +741,29 @@ mod tests {
 
     #[test]
     fn quaternion_multiply() {
-        let r = Quaternion::identity();
         let q = Quaternion::identity();
-        assert_eq!(Quaternion::identity(), r.multiply(&q));
+        let r = Quaternion::identity();
+        assert_eq!(Quaternion::identity(), q.multiply(&r));
     }
 
     #[test]
     fn quaternion_before() {
-        let r = Quaternion::identity();
-        let q = Quaternion::identity();
-        assert_eq!(Quaternion::identity(), r.before(&q));
+        let angle = PI / 2.0;
+        let q = Quaternion::from_angle_axis(angle, &Vector3d::x());
+        let r = Quaternion::from_angle_axis(angle, &Vector3d::y());
+        let expected = Quaternion::new(0.5, Vector3d::new([0.5, 0.5, -0.5]));
+        assert_quat_approx_eq!(expected, q.before(&r));
+        assert_quat_approx_eq!(expected, r.after(&q));
     }
 
     #[test]
     fn quaternion_after() {
-        let r = Quaternion::identity();
-        let q = Quaternion::identity();
-        assert_eq!(Quaternion::identity(), r.after(&q));
+        let angle = PI / 2.0;
+        let q = Quaternion::from_angle_axis(angle, &Vector3d::x());
+        let r = Quaternion::from_angle_axis(angle, &Vector3d::y());
+        let expected = Quaternion::new(0.5, Vector3d::new([0.5, 0.5, 0.5]));
+        assert_quat_approx_eq!(expected, q.after(&r));
+        assert_quat_approx_eq!(expected, r.before(&q));
     }
 
 
