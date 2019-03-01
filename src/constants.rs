@@ -1,0 +1,1 @@
+pub const DBL_EPSILON: f64 = 2.220_446_049_250_313e-16;
