@@ -15,6 +15,9 @@ pub trait Rotation {
     /// The inverse of a rotation.
     fn inverse(&self) -> Result<Self::R, String>;
 
+    /// The inverse of a rotation.
+    fn inverse_unchecked(&self) -> Self::R;
+
     /// Get the quaternion representation of a rotation.
     fn as_quaternion(&self) -> Quaternion;
 

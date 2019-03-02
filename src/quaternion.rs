@@ -4,7 +4,7 @@ use crate::rotation::Rotation;
 use crate::constants::DBL_EPSILON;
 
 /// A quaternion
-#[derive(Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq)]
 pub struct Quaternion {
     real_part: f64,
     imaginary_part: Vector3d
@@ -65,7 +65,6 @@ impl Quaternion {
     fn norm(&self) -> f64 {
         self.norm_squared().sqrt()
     }
-
 }
 
 impl fmt::Debug for Quaternion {
@@ -129,6 +128,16 @@ impl Rotation for Quaternion {
         let real_part = c.real_part * inv_norm_squared;
         let imaginary_part = c.imaginary_part.scalar_multiple(inv_norm_squared);
         Ok(Self::new(real_part, imaginary_part))
+    }
+
+    /// Inverse but don't check for divide-by-zero.
+    fn inverse_unchecked(&self) -> Self {
+        // Check that norm is > 0
+        let inv_norm_squared = 1.0 / self.norm_squared();
+        let c = self.conjugate();
+        let real_part = c.real_part * inv_norm_squared;
+        let imaginary_part = c.imaginary_part.scalar_multiple(inv_norm_squared);
+        Self::new(real_part, imaginary_part)
     }
 
     /// Get the quaternion representation of a rotation.
@@ -235,7 +244,7 @@ impl Rotation for Quaternion {
     /// assert_eq!(Quaternion::identity(), q.after(&r));
     /// ```
     fn after<T: Rotation<R = T>>(&self, r: &T) -> T {
-        r.inverse().unwrap().multiply(&self.inverse().unwrap()).inverse().unwrap()
+        r.inverse_unchecked().multiply(&self.inverse_unchecked()).inverse_unchecked()
     }
 
 }

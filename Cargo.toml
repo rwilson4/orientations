@@ -12,3 +12,7 @@ criterion = "0.2"
 [[bench]]
 name = "vector3d"
 harness = false
+
+[[bench]]
+name = "quaternion"
+harness = false

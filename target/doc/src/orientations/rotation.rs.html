@@ -31,6 +31,9 @@
 <span id="31">31</span>
 <span id="32">32</span>
 <span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">vector3d</span>::<span class="ident">Vector3d</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">quaternion</span>::<span class="ident">Quaternion</span>;
@@ -48,6 +51,9 @@
 
     <span class="doccomment">/// The inverse of a rotation.</span>
     <span class="kw">fn</span> <span class="ident">inverse</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">R</span>, <span class="ident">String</span><span class="op">&gt;</span>;
+
+    <span class="doccomment">/// The inverse of a rotation.</span>
+    <span class="kw">fn</span> <span class="ident">inverse_unchecked</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-&gt;</span> <span class="self">Self</span>::<span class="ident">R</span>;
 
     <span class="doccomment">/// Get the quaternion representation of a rotation.</span>
     <span class="kw">fn</span> <span class="ident">as_quaternion</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-&gt;</span> <span class="ident">Quaternion</span>;
