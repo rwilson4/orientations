@@ -10,16 +10,20 @@ def main():
     for (meta_fn, estimates_fn) in benchmark_files():
         with open(meta_fn, 'r') as fh:
             meta = json.loads(fh.read())
-            group = meta['group_id']
-            function = meta.get('function_id', None) or group
+            group = meta['group_id'].split(':')[0]
+            function = meta['group_id'].split(':')[1]
+            version = meta.get('function_id', None) or function
 
         with open(estimates_fn) as fh:
             contents = json.loads(fh.read())
 
         if group not in b:
             b[group] = {}
+
+        if function not in b[group]:
+            b[group][function] = {}
             
-        b[group][function] = parse_contents(contents)
+        b[group][function][version] = parse_contents(contents)
 
     print_benchmarks(b)
 
@@ -94,19 +98,23 @@ def print_benchmarks(benchmarks):
 All benchmarks run on a 2017 Macbook Pro with a 3.1 GHz Intel Core i7
 processor and 16 GB 2133 MHz LPDDR3 RAM.
 
-Group | Function | Runtime (ns) | Throughput (Mops/s)
-------|----------|-------------:|-------------------:
+Group | Function | Version | Runtime (ns) | Throughput (Mops/s)
+------|----------|---------|-------------:|-------------------:
 {%- for grp_name, grp in benchmarks.items() %}
-{%- for fn_name, res in grp.items() %}
+{%- for fn_name, fns in grp.items() %}
+{%- for vs_name, res in fns.items() %}
 {{
    grp_name | replace("_", "\_")
 }} | {{
    fn_name | replace("_", "\_")
 }} | {{
+   vs_name | replace("_", "\_")
+}} | {{
    '%6.1f'| format(res['Runtime']|float)
 }} | {{
    '%6.1f'| format(res['Throughput']|float)
 }}
+{%- endfor %}
 {%- endfor %}
 {%- endfor %}"""
 
