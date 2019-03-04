@@ -12,7 +12,7 @@ fn dot_product(c: &mut Criterion) {
         move |b| b.iter(|| x.dot(&y))
     ).throughput(Throughput::Elements(1));
 
-    c.bench("dot_product", bench);
+    c.bench("vector3d:dot_product", bench);
 }
 
 fn cross_product(c: &mut Criterion) {
@@ -23,7 +23,7 @@ fn cross_product(c: &mut Criterion) {
         move |b| b.iter(|| x.cross(&y))
     ).throughput(Throughput::Elements(1));
 
-    c.bench("cross_product", bench);
+    c.bench("vector3d:cross_product", bench);
 }
 
 criterion_group!(benches, dot_product, cross_product);
