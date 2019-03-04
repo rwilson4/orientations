@@ -98,8 +98,8 @@ def print_benchmarks(benchmarks):
 All benchmarks run on a 2017 Macbook Pro with a 3.1 GHz Intel Core i7
 processor and 16 GB 2133 MHz LPDDR3 RAM.
 
-Group | Function | Version | Runtime (ns) | Throughput (Mops/s)
-------|----------|---------|-------------:|-------------------:
+Struct | Group | Version | Runtime (ns) | Throughput (Mops/s)
+-------|-------|---------|-------------:|-------------------:
 {%- for grp_name, grp in benchmarks.items() %}
 {%- for fn_name, fns in grp.items() %}
 {%- for vs_name, res in fns.items() %}
