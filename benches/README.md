@@ -1,5 +1,8 @@
 # Benchmarks
 
+All benchmarks run on a 2017 Macbook Pro with a 3.1 GHz Intel Core i7
+processor and 16 GB 2133 MHz LPDDR3 RAM.
+
 Group | Function | Runtime (ns) | Throughput (Mops/s)
 ------|----------|-------------:|-------------------:
 angle\_axis | angle\_axis |   42.2 |   23.7

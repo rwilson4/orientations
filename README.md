@@ -40,9 +40,15 @@ towards having integration tests in a separate folder and unit tests
 stay with the code. In this particular code base, integration tests
 don't seem as applicable.
 
+To get the code coverage, I am using [tarpaulin](https://github.com/xd009642/tarpaulin).
+This is just done within TravisCI (see `.travis.yml` or the tarpaulin
+documentation for details), so no dependency is required.
+
 ## Benchmarks
 
 Benchmarks are available in the `benches` folder. The `README` in that
 folder contains a summary of the results. To run the benchmarks, run
 `cargo bench`. To process the results and update the `README` in the
 `benches` folder, run `python etc/process_benchmarks.py`.
+
+The benchmarks use [Criterion](https://github.com/bheisler/criterion.rs).
