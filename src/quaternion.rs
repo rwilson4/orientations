@@ -411,7 +411,7 @@ mod tests {
     }
 
     #[test]
-    fn quaternion_from_angle_axis() {
+    fn from_angle_axis() {
         let angle = PI / 2.0;
         let q = Quaternion::from_angle_axis(angle, &Vector3d::x());
         let sqrt2_over_2 = (2.0_f64).sqrt() / 2.0;
@@ -421,31 +421,31 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn quaternion_from_angle_zero_axis() {
+    fn from_angle_zero_axis() {
         Quaternion::from_angle_axis(0.0, &Vector3d::zero());
     }
 
     #[test]
-    fn quaternion_conjugate() {
+    fn conjugate() {
         let q = Quaternion::new(0.2, Vector3d::new([0.3, 0.4, 0.5]));
         let expected = Quaternion::new(0.2, Vector3d::new([-0.3, -0.4, -0.5]));
         assert_eq!(expected, q.conjugate());
     }
 
     #[test]
-    fn quaternion_norm_squared() {
+    fn norm_squared() {
         let q = Quaternion::new(0.2, Vector3d::new([0.3, 0.4, 0.5]));
         assert_eq!(0.54, q.norm_squared());
     }
 
     #[test]
-    fn quaternion_identity() {
+    fn identity() {
         let expected = Quaternion::new(1.0, Vector3d::zero());
         assert_eq!(expected, Quaternion::identity());
     }
 
     #[test]
-    fn quaternion_angle_axis() {
+    fn angle_axis() {
         let theta = 0.03;
         let xyz = Vector3d::new([1.0, 2.0, 3.0]).normalized().unwrap();
         let q = Quaternion::from_angle_axis(theta, &xyz);
@@ -455,7 +455,7 @@ mod tests {
     }
 
     #[test]
-    fn quaternion_zero_angle_axis() {
+    fn zero_angle_axis() {
         let q = Quaternion::new(0.0, Vector3d::zero());
         let (angle, axis) = q.angle_axis();
         assert_eq!(0.0, angle);
@@ -463,7 +463,7 @@ mod tests {
     }
 
     #[test]
-    fn quaternion_inverse() {
+    fn inverse() {
         let sqrt2 = (2 as f64).sqrt() / 2.0;
         let q = Quaternion::new(sqrt2, Vector3d::new([sqrt2, 0.0, 0.0]));
         let expected = Quaternion::new(sqrt2, Vector3d::new([-sqrt2, 0.0, 0.0]));
@@ -471,7 +471,7 @@ mod tests {
     }
 
     #[test]
-    fn quaternion_zero_inverse() {
+    fn zero_inverse() {
         let zero = Quaternion::new(0.0, Vector3d::new([0.0, 0.0, 0.0]));
         match zero.inverse() {
             Ok(_) => assert!(false, "Should not be able to invert zero"),
@@ -480,20 +480,20 @@ mod tests {
     }
 
     #[test]
-    fn quaternion_as_quaternion() {
+    fn as_quaternion() {
         let r = Quaternion::identity();
         assert_eq!(Quaternion::identity(), r.as_quaternion());
     }
 
     #[test]
-    fn quaternion_multiply() {
+    fn multiply() {
         let q = Quaternion::identity();
         let r = Quaternion::identity();
         assert_eq!(Quaternion::identity(), q.multiply(&r));
     }
 
     #[test]
-    fn quaternion_before() {
+    fn before() {
         let angle = PI / 2.0;
         let q = Quaternion::from_angle_axis(angle, &Vector3d::x());
         let r = Quaternion::from_angle_axis(angle, &Vector3d::y());
@@ -503,7 +503,7 @@ mod tests {
     }
 
     #[test]
-    fn quaternion_after() {
+    fn after() {
         let angle = PI / 2.0;
         let q = Quaternion::from_angle_axis(angle, &Vector3d::x());
         let r = Quaternion::from_angle_axis(angle, &Vector3d::y());
@@ -513,7 +513,7 @@ mod tests {
     }
 
     #[test]
-    fn rotate_vector() {
+    fn vector() {
         let angle = PI / 2.0;
         let q = Quaternion::from_angle_axis(angle, &Vector3d::z());
         assert_vector_approx_eq!(Vector3d::y(), q.rotate_vector(&Vector3d::x()));

@@ -220,7 +220,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn vector3d_dot() {
+    fn dot() {
         let x = Vector3d::new([1.0, 2.0, 3.0]);
         let y = Vector3d::new([4.0, 5.0, 6.0]);
         let expected = 32.0;
@@ -229,7 +229,7 @@ mod tests {
     }
 
     #[test]
-    fn vector3d_cross() {
+    fn cross() {
         let x = Vector3d::new([1.0, 2.0, 3.0]);
         let y = Vector3d::new([4.0, 5.0, 6.0]);
         let expected = Vector3d::new([-3.0, 6.0, -3.0]);
@@ -237,7 +237,7 @@ mod tests {
     }
 
     #[test]
-    fn vector3d_x_cross_y_equals_z() {
+    fn x_cross_y_equals_z() {
         let x = Vector3d::x();
         let y = Vector3d::y();
         assert_eq!(Vector3d::z(), x.cross(&y));
@@ -282,7 +282,7 @@ mod tests {
     }
 
     #[test]
-    fn vector3d_zero_normalized() {
+    fn zero_normalized() {
         let zero = Vector3d::zero();
         match zero.normalized() {
             Ok(_) => assert!(false, "Should not be able to normalize zero vector"),
@@ -291,14 +291,14 @@ mod tests {
     }
 
     #[test]
-    fn vector3d_norm() {
+    fn norm() {
         let x = Vector3d::new([1.0, 2.0, 2.0]);
         let expected = 3.0;
         assert_eq!(expected, x.norm());
     }
 
     #[test]
-    fn vector3d_scalar_multiple() {
+    fn scalar_multiple() {
         let x = Vector3d::new([1.0, 2.0, 3.0]);
         let alpha = 2.0;
         let expected = Vector3d::new([2.0, 4.0, 6.0]);
@@ -306,7 +306,7 @@ mod tests {
     }
 
     #[test]
-    fn vector3d_negate() {
+    fn negate() {
         let x = Vector3d::new([1.0, 2.0, 3.0]);
         let expected = Vector3d::new([-1.0, -2.0, -3.0]);
         assert_eq!(expected, x.negate());
