@@ -32,5 +32,8 @@ pub trait Rotation {
 
     /// Convenience function; should not be used.
     fn multiply<T: Rotation>(&self, r: &T) -> Self::R;
+
+    /// Rotate a vector
+    fn rotate_vector(&self, v: &Vector3d) -> Vector3d;
 }
 

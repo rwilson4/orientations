@@ -247,6 +247,25 @@ impl Rotation for Quaternion {
         r.inverse_unchecked().multiply(&self.inverse_unchecked()).inverse_unchecked()
     }
 
+    /// Rotate a vector
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use orientations::*;
+    /// let axis = Vector3d::z();
+    /// let angle = std::f64::consts::PI / 2.0;
+    /// let q = Quaternion::from_angle_axis(angle, &axis);
+    /// let v = Vector3d::x();
+    /// let w = q.rotate_vector(&v);
+    /// ```
+    fn rotate_vector(&self, v: &Vector3d) -> Vector3d {
+        let vv = Quaternion::new(0.0, v.clone());
+        let ww = self.multiply(&vv).multiply(&self.inverse_unchecked());
+        let w = ww.imaginary_part;
+        w
+    }
+
 }
 
 
@@ -493,5 +512,10 @@ mod tests {
         assert_quat_approx_eq!(expected, r.before(&q));
     }
 
-
+    #[test]
+    fn rotate_vector() {
+        let angle = PI / 2.0;
+        let q = Quaternion::from_angle_axis(angle, &Vector3d::z());
+        assert_vector_approx_eq!(Vector3d::y(), q.rotate_vector(&Vector3d::x()));
+    }
 }

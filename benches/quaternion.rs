@@ -61,5 +61,25 @@ fn before_after(c: &mut Criterion) {
     c.bench("quaternion:before_after", bench);
 }
 
-criterion_group!(benches, from_angle_axis, inverse, angle_axis, before_after);
+fn rotate_vector(c: &mut Criterion) {
+    let angle = PI / 2.0;
+    let axis = Vector3d::z();
+    let q = Quaternion::from_angle_axis(angle, &axis);
+    let v = Vector3d::x();
+    let bench = Benchmark::new(
+        "rotate_vector",
+        move |b| b.iter(|| q.rotate_vector(&v))
+    ).throughput(Throughput::Elements(1));
+
+    c.bench("quaternion::rotate_vector", bench);
+}
+
+criterion_group!(
+    benches,
+    from_angle_axis,
+    inverse,
+    angle_axis,
+    before_after,
+    rotate_vector
+);
 criterion_main!(benches);
