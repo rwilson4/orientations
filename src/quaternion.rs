@@ -513,9 +513,31 @@ mod tests {
     }
 
     #[test]
-    fn vector() {
+    fn rotate_x_90degrees_about_z_equals_y() {
         let angle = PI / 2.0;
         let q = Quaternion::from_angle_axis(angle, &Vector3d::z());
         assert_vector_approx_eq!(Vector3d::y(), q.rotate_vector(&Vector3d::x()));
+    }
+
+    #[test]
+    fn rotate_y_90degrees_about_z_equals_negative_x() {
+        let angle = PI / 2.0;
+        let q = Quaternion::from_angle_axis(angle, &Vector3d::z());
+        assert_vector_approx_eq!(Vector3d::x().negate(), q.rotate_vector(&Vector3d::y()));
+    }
+
+    #[test]
+    fn rotate_x_30degrees_about_z_equals_in_first_quadrant() {
+        let angle = PI / 6.0;
+        let q = Quaternion::from_angle_axis(angle, &Vector3d::z());
+        let expected = Vector3d::new([3.0_f64.sqrt() / 2.0, 0.5, 0.0]);
+        assert_vector_approx_eq!(expected, q.rotate_vector(&Vector3d::x()));
+    }
+
+    #[test]
+    fn rotate_y_90degrees_about_x_equals_z() {
+        let angle = PI / 2.0;
+        let q = Quaternion::from_angle_axis(angle, &Vector3d::x());
+        assert_vector_approx_eq!(Vector3d::z(), q.rotate_vector(&Vector3d::y()));
     }
 }
