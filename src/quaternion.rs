@@ -1,6 +1,7 @@
 use std::fmt;
 use crate::vector3d::Vector3d;
 use crate::rotation::Rotation;
+use crate::rotation_matrix::RotationMatrix;
 use crate::constants::DBL_EPSILON;
 
 /// A quaternion
@@ -151,6 +152,10 @@ impl Rotation for Quaternion {
     /// ```
     fn as_quaternion(&self) -> Self {
         self.clone()
+    }
+
+    fn as_rotation_matrix(&self) -> RotationMatrix {
+        RotationMatrix::identity()
     }
 
     /// Get the angle and axis associated with a rotation. If the

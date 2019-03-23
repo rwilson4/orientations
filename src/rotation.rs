@@ -1,5 +1,6 @@
 use crate::vector3d::Vector3d;
 use crate::quaternion::Quaternion;
+use crate::rotation_matrix::RotationMatrix;
 
 /// Rotation trait
 pub trait Rotation {
@@ -20,6 +21,9 @@ pub trait Rotation {
 
     /// Get the quaternion representation of a rotation.
     fn as_quaternion(&self) -> Quaternion;
+
+    /// Get the rotation matrix representation of a rotation.
+    fn as_rotation_matrix(&self) -> RotationMatrix;
 
     /// Get the angle and axis associated with a rotation.
     fn angle_axis(&self) -> (f64, Vector3d);

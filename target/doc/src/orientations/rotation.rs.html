@@ -37,9 +37,14 @@
 <span id="37">37</span>
 <span id="38">38</span>
 <span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">vector3d</span>::<span class="ident">Vector3d</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">quaternion</span>::<span class="ident">Quaternion</span>;
+<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">rotation_matrix</span>::<span class="ident">RotationMatrix</span>;
 
 <span class="doccomment">/// Rotation trait</span>
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Rotation</span> {
@@ -60,6 +65,9 @@
 
     <span class="doccomment">/// Get the quaternion representation of a rotation.</span>
     <span class="kw">fn</span> <span class="ident">as_quaternion</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-&gt;</span> <span class="ident">Quaternion</span>;
+
+    <span class="doccomment">/// Get the rotation matrix representation of a rotation.</span>
+    <span class="kw">fn</span> <span class="ident">as_rotation_matrix</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-&gt;</span> <span class="ident">RotationMatrix</span>;
 
     <span class="doccomment">/// Get the angle and axis associated with a rotation.</span>
     <span class="kw">fn</span> <span class="ident">angle_axis</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-&gt;</span> (<span class="ident">f64</span>, <span class="ident">Vector3d</span>);
